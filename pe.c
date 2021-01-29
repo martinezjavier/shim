@@ -1040,7 +1040,8 @@ handle_image (void *data, unsigned int datasize,
         if (SBATBase && SBATSize) {
 		int res;
 		struct sbat_metadata sbat = { 0 };
-
+		struct node *currnode = NULL;
+		struct node *tree = NULL;
 		res = parse_sbat(SBATBase, SBATSize, buffer, &sbat);
 		if (res < 0) {
 			console_print(L"SBAT metadata not correct: %r\n", res);
@@ -1055,6 +1056,18 @@ handle_image (void *data, unsigned int datasize,
 		dprint(L"Product generation: \"%a\"\n", sbat.product_generation);
 		dprint(L"Product version: \"%a\"\n", sbat.product_version);
 		dprint(L"Version generation: \"%a\"\n", sbat.version_generation);
+		tree = parse_sbat_var();
+		if (tree == NULL) {
+			console_print(L"SBAT variable not read");
+			return EFI_NOT_FOUND;
+		}
+		/*example  usage*/
+		CHAR16 *name = L"fedora";
+		CHAR16 *parent = L"kernel";
+		currnode = SearchAll(tree, parent);
+		console_print(L"name and version of last node with parent %s is %s ", parent, currnode->data, currnode->version);
+		currnode = SearchComp(tree, parent, name);
+		console_print(L"version of node name %s parent %s is %s ", name, parent, currnode->version);
         } else {
 		console_print(L"SBAT metadata not found\n");
 		return EFI_UNSUPPORTED;
