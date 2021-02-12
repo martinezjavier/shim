@@ -132,11 +132,11 @@ EFI_STATUS verify_sbat (struct sbat *sbat, struct sbat_var *sbat_var_root)
 			if (strcmp(entry->component_name,currnode->component_name) == 0) {
 				dprint(L"component %a has a matching SBAT variable entry, verifying\n", entry->component_name);
 				/* atoi returns zero for failed conversion, so essentially
-				badly parsed component_generation will be treated as zero 
+				   badly parsed component_generation will be treated as zero 
 				*/
 				UINT16 sbat_cmp_gen = atoi(entry->component_generation);
 				if (sbat_cmp_gen < currnode->component_generation) {
-					dprint(L"component %a generation is %d, conflicts with SBAT variable value %d\n",
+					dprint(L"component's %a binary generation: %d. Conflicts with SBAT variable generation %d\n",
 					entry->component_name, atoi(entry->component_generation), currnode->component_generation);
 					LogError(L"binary SBAT generation number is conflicting with SBAT variable value\n");
 					return EFI_SECURITY_VIOLATION;
@@ -152,9 +152,7 @@ EFI_STATUS verify_sbat (struct sbat *sbat, struct sbat_var *sbat_var_root)
 static BOOLEAN is_utf8_bom(CHAR8 *buf)
 {
 	unsigned char bom[] = { 0xEF,0xBB,0xBF };
-	if (CompareMem(buf,bom,3) == 0)
-		return TRUE;
-	return FALSE;
+	return !!CompareMem(buf, bom, MIN(sizeof(bom), sizeof(buf)));
 }
 
 struct sbat_var* new_entry(const CHAR8 *comp_gen, const CHAR8 *comp_name_size,
@@ -198,14 +196,18 @@ struct sbat_var* parse_sbat_var()
 	*end = '\0';
 	if (is_utf8_bom(start))
 		start += 3;
+	dprint(L"SBAT variable data:\n");
 	while (start[0] != '\0') {
 		const CHAR8 *comp_name_size, *comp_gen, *comp_name;
-		start = get_sbat_field(start, end, &comp_name, ',');
+
+		start = get_sbat_field(start, end, &comp_gen, ',');
 
 		start = get_sbat_field(start, end, &comp_name_size, ',');
 
-		start = get_sbat_field(start, end, &comp_gen, '\n');
-		dprint(L"component %a with generation %d present in SBAT VAR\n",comp_name, atoi(comp_gen));
+		start = get_sbat_field(start, end, &comp_name, '\n');
+
+		dprint(L"adding component %a with generation %a\n",comp_name, comp_gen);
+
 		add_entry(nodename, comp_gen, comp_name_size, comp_name);
 		nodename = nodename->next;
 	}
