@@ -1043,6 +1043,8 @@ handle_image (void *data, unsigned int datasize,
 		EFI_STATUS efi_status;
 		struct sbat sbat = { 0 };
 		struct sbat_entry *entry = NULL;
+		list_t sbat_var_entries;
+		INIT_LIST_HEAD(&sbat_var_entries);
 
 		if (SBATBase && SBATSize) {
 			char *sbat_data;
@@ -1079,6 +1081,22 @@ handle_image (void *data, unsigned int datasize,
 			perror(L"SBAT data not found\n");
 			return EFI_UNSUPPORTED;
 		}
+
+		efi_status = parse_sbat_var(&sbat_var_entries);
+		/*
+		 * Until a SBAT variable is installed into the systems, it is expected that
+		 * attempting to parse the variable will fail with an EFI_NOT_FOUND error.
+		 *
+		 * Do not consider that error fatal for now.
+		 */
+		if (EFI_ERROR(efi_status) && efi_status != EFI_NOT_FOUND) {
+			perror(L"Parsing SBAT variable failed: %r\n",
+			       efi_status);
+			return efi_status;
+		}
+
+		if (efi_status == EFI_SUCCESS)
+			efi_status = verify_sbat(&sbat, &sbat_var_entries);
 
 		efi_status = verify_buffer(data, datasize,
 					   &context, sha256hash, sha1hash);

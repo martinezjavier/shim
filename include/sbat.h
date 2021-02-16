@@ -6,6 +6,17 @@
 #ifndef SBAT_H_
 #define SBAT_H_
 
+struct sbat_var {
+	const CHAR8 *component_generation;
+	const CHAR8 *component_name_size;
+	const CHAR8 *component_name;
+	list_t list;
+};
+
+#define for_each_sbat_var(sbat, head)         list_for_each (sbat, head)
+#define for_each_sbat_var_safe(sbat, n, head) list_for_each_safe (sbat, n, head)
+#define sbat_empty(head)                      list_empty(head)
+
 struct sbat_entry {
 	const CHAR8 *component_name;
 	const CHAR8 *component_generation;
@@ -19,6 +30,10 @@ struct sbat {
 	unsigned int size;
 	struct sbat_entry **entries;
 };
+
+EFI_STATUS parse_sbat_var(list_t *entries);
+
+EFI_STATUS verify_sbat(struct sbat *sbat, list_t *entries);
 
 EFI_STATUS parse_sbat(char *sbat_base, size_t sbat_size, struct sbat *sbat);
 
